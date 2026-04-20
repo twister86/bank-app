@@ -14,7 +14,7 @@
     <description>API Gateway — Spring Cloud Gateway MVC, OAuth2 Login, TokenRelay</description>
 
     <dependencies>
-        <!-- Gateway на Servlet-стеке (MVC)-->
+        <!-- Gateway на Servlet-стеке (MVC). НЕ -starter-gateway (WebFlux) -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway-server-webmvc</artifactId>

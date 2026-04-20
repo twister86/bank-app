@@ -1,0 +1,43 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+    discovery:
+      enabled: false
+  config:
+    import: ""
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost/realms/test
+      # Dummy client registration — нужна для загрузки контекста,
+      # в тестах RestClient обходит OAuth2 напрямую (см. контракт-тест).
+      client:
+        registration:
+          cash-client:
+            provider: keycloak
+            client-id: cash-client
+            client-secret: test
+            authorization-grant-type: client_credentials
+            scope: accounts.write,notifications.write
+        provider:
+          keycloak:
+            token-uri: http://localhost/fake/token
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+services:
+  accounts:
+    url: http://accounts-service
+  notifications:
+    url: http://notifications-service
+
+server:
+  port: 0

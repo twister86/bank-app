@@ -11,7 +11,7 @@ COPY notifications-service/pom.xml notifications-service/
 COPY front/pom.xml front/
 COPY config-server/src config-server/src
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn -pl config-server -am -DskipTests clean package -B
+    mvn -pl config-server -am -Dmaven.test.skip=true clean package -B
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

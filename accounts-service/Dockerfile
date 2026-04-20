@@ -17,7 +17,7 @@ COPY front/pom.xml front/
 # Теперь копируем исходники только нужного модуля и собираем.
 COPY accounts-service/src accounts-service/src
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn -pl accounts-service -am -DskipTests clean package -B
+    mvn -pl accounts-service -am -Dmaven.test.skip=true clean package -B
 
 # ---------- runtime stage ----------
 FROM eclipse-temurin:21-jre

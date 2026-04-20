@@ -1,8 +1,6 @@
-# bootstrap.yml загружается ДО application.yml.
-# Здесь указывается, откуда читать конфигурацию (Config Server).
 spring:
   application:
-    name: accounts-service
+    name: front
   cloud:
     config:
       uri: ${CONFIG_SERVER_URI:http://localhost:8888}

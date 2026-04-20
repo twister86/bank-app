@@ -5,7 +5,6 @@
 #   - Keycloak импортирует realm my-bank со всеми клиентами/пользователями
 #   - Eureka и Config Server стартуют первыми
 #   - Прикладные сервисы ждут Config Server (healthcheck) и Eureka
-#
 
 name: my-bank
 
@@ -68,10 +67,10 @@ services:
     environment:
       EUREKA_HOST: eureka
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health 2>/dev/null | grep -q UP || exit 0"]
+      test: ["CMD-SHELL", "wget -qO - http://localhost:8761/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 10s
       timeout: 3s
-      retries: 10
+      retries: 20
       start_period: 30s
 
   config-server:
@@ -85,13 +84,13 @@ services:
       EUREKA_HOST: eureka
     depends_on:
       eureka:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health 2>/dev/null | grep -q UP || exit 0"]
+      test: ["CMD-SHELL", "wget -qO - http://localhost:8888/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 10s
       timeout: 3s
-      retries: 15
-      start_period: 30s
+      retries: 30
+      start_period: 45s
 
   accounts-service:
     build:
@@ -122,9 +121,9 @@ services:
       keycloak:
         condition: service_started
       config-server:
-        condition: service_started
+        condition: service_healthy
       eureka:
-        condition: service_started
+        condition: service_healthy
 
   gateway:
     build:
@@ -143,10 +142,104 @@ services:
       keycloak:
         condition: service_started
       config-server:
-        condition: service_started
+        condition: service_healthy
       eureka:
-        condition: service_started
+        condition: service_healthy
       accounts-service:
+        condition: service_started
+
+  notifications-service:
+    build:
+      context: .
+      dockerfile: notifications-service/Dockerfile
+    container_name: mb-notifications
+    ports:
+      - "8084:8084"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+    depends_on:
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+
+  cash-service:
+    build:
+      context: .
+      dockerfile: cash-service/Dockerfile
+    container_name: mb-cash
+    ports:
+      - "8082:8082"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+      CASH_CLIENT_SECRET: cash-secret
+    depends_on:
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+      accounts-service:
+        condition: service_started
+      notifications-service:
+        condition: service_started
+
+  transfer-service:
+    build:
+      context: .
+      dockerfile: transfer-service/Dockerfile
+    container_name: mb-transfer
+    ports:
+      - "8083:8083"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+      TRANSFER_CLIENT_SECRET: transfer-secret
+    depends_on:
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+      accounts-service:
+        condition: service_started
+      notifications-service:
+        condition: service_started
+
+  front:
+    build:
+      context: .
+      dockerfile: front/Dockerfile
+    container_name: mb-front
+    ports:
+      - "8085:8085"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+      FRONT_CLIENT_SECRET: front-secret
+      GATEWAY_URL: http://gateway:8080
+    depends_on:
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+      gateway:
         condition: service_started
 
 volumes:
