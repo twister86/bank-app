@@ -73,7 +73,6 @@ class AccountServiceTest {
 
     @Test
     void update_rejectsUnder18() {
-        when(accountRepository.findByLogin("ivan")).thenReturn(Optional.of(account));
 
         UpdateAccountRequest req = new UpdateAccountRequest(
                 "Иванов Иван Младший",

@@ -11,7 +11,7 @@ spring:
       server:
         native:
           # Читаем конфиги из classpath — они упакованы в JAR модуля.
-          # В проде заменили бы на git backend (server.git.uri).
+          # В проде заменить на git backend (server.git.uri).
           search-locations: classpath:/configs/
 
 eureka:

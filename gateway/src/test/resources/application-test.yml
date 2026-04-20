@@ -23,8 +23,6 @@ spring:
             scope: openid,profile
         provider:
           keycloak:
-            # issuer-uri не валидируется "на живую" — Spring просто читает
-            # jwk-set-uri отдельно, а при тестах mock-фильтры его и не дёргают.
             authorization-uri: http://localhost/fake/auth
             token-uri: http://localhost/fake/token
             jwk-set-uri: http://localhost/fake/jwks

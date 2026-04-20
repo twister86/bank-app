@@ -4,8 +4,6 @@ server:
 spring:
   cloud:
     gateway:
-      # В Spring Cloud Gateway 4.3+ / 2025.0 путь для MVC-роутов —
-      # spring.cloud.gateway.mvc.routes (без вложенных server.webmvc).
       mvc:
         routes:
           - id: accounts-route
@@ -29,11 +27,6 @@ spring:
             filters:
               - StripPrefix=1
               - TokenRelay=
-
-  # Gateway — OAuth2 Client: принимает пользовательскую авторизацию
-  # по Authorization Code Flow у Keycloak. Токен хранится в HTTP-сессии
-  # Gateway'а; TokenRelay-фильтр извлекает его и кладёт в заголовок
-  # Authorization: Bearer <JWT> при проксировании в downstream.
   security:
     oauth2:
       client:
