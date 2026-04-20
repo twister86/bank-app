@@ -1,0 +1,41 @@
+# Test-конфиг для Gateway — отключаем внешние зависимости,
+# подставляем фиктивный Keycloak issuer (тест не делает реальных вызовов).
+spring:
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+    discovery:
+      enabled: false
+  config:
+    import: ""
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: gateway-client
+            client-secret: test-secret
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid,profile
+        provider:
+          keycloak:
+            # issuer-uri не валидируется "на живую" — Spring просто читает
+            # jwk-set-uri отдельно, а при тестах mock-фильтры его и не дёргают.
+            authorization-uri: http://localhost/fake/auth
+            token-uri: http://localhost/fake/token
+            jwk-set-uri: http://localhost/fake/jwks
+            user-info-uri: http://localhost/fake/userinfo
+            user-name-attribute: preferred_username
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+server:
+  port: 0

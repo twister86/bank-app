@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      # В Spring Cloud Gateway 4.3+ / 2025.0 путь для MVC-роутов —
+      # spring.cloud.gateway.mvc.routes (без вложенных server.webmvc).
+      mvc:
+        routes:
+          - id: accounts-route
+            uri: lb://accounts-service
+            predicates:
+              - Path=/api/accounts/**
+            filters:
+              - StripPrefix=1
+              - TokenRelay=
+          - id: cash-route
+            uri: lb://cash-service
+            predicates:
+              - Path=/api/cash/**
+            filters:
+              - StripPrefix=1
+              - TokenRelay=
+          - id: transfer-route
+            uri: lb://transfer-service
+            predicates:
+              - Path=/api/transfer/**
+            filters:
+              - StripPrefix=1
+              - TokenRelay=
+
+  # Gateway — OAuth2 Client: принимает пользовательскую авторизацию
+  # по Authorization Code Flow у Keycloak. Токен хранится в HTTP-сессии
+  # Gateway'а; TokenRelay-фильтр извлекает его и кладёт в заголовок
+  # Authorization: Bearer <JWT> при проксировании в downstream.
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: gateway-client
+            client-secret: ${GATEWAY_CLIENT_SECRET:gateway-secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - openid
+              - profile
+              - accounts.read
+              - accounts.write
+              - cash.write
+              - transfer.write
+        provider:
+          keycloak:
+            issuer-uri: ${keycloak.issuer-uri-external}
+            user-name-attribute: preferred_username

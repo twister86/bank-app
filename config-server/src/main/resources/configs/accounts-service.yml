@@ -1,0 +1,46 @@
+# Централизованный конфиг для accounts-service
+# (читается Config Server'ом из classpath:/configs/accounts-service.yml)
+
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:bank}?currentSchema=accounts
+    username: ${DB_USER:bank}
+    password: ${DB_PASSWORD:bank}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        default_schema: accounts
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yml
+    default-schema: accounts
+    liquibase-schema: accounts
+
+  # Accounts сам делает запросы в Notifications → он OAuth2 Client
+  # (Client Credentials Flow).
+  security:
+    oauth2:
+      client:
+        registration:
+          accounts-client:
+            provider: keycloak
+            client-id: accounts-client
+            client-secret: ${ACCOUNTS_CLIENT_SECRET:accounts-secret}
+            authorization-grant-type: client_credentials
+            scope: notifications.write
+        provider:
+          keycloak:
+            token-uri: ${keycloak.issuer-uri-internal}/protocol/openid-connect/token
+
+# URL'ы соседних сервисов — через Eureka (имена приложений).
+services:
+  notifications:
+    url: http://notifications-service

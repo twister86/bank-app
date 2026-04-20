@@ -1,0 +1,202 @@
+{
+  "realm": "my-bank",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "accessTokenLifespan": 1800,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+
+  "clientScopes": [
+    {
+      "name": "accounts.read",
+      "description": "Read accounts",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "accounts.write",
+      "description": "Write accounts (edit, change balance)",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "cash.write",
+      "description": "Cash operations (deposit/withdraw)",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "transfer.write",
+      "description": "Transfer money between accounts",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "notifications.write",
+      "description": "Send notifications",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    }
+  ],
+
+  "clients": [
+    {
+      "clientId": "front-client",
+      "name": "Front UI (Authorization Code)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "front-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8085/*",
+        "http://front:8085/*"
+      ],
+      "webOrigins": ["+"],
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      },
+      "defaultClientScopes": ["openid", "profile", "email"],
+      "optionalClientScopes": [
+        "accounts.read",
+        "accounts.write",
+        "cash.write",
+        "transfer.write"
+      ]
+    },
+    {
+      "clientId": "gateway-client",
+      "name": "Gateway (Authorization Code)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "gateway-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8080/*",
+        "http://gateway:8080/*"
+      ],
+      "webOrigins": ["+"],
+      "defaultClientScopes": ["openid", "profile", "email"],
+      "optionalClientScopes": [
+        "accounts.read",
+        "accounts.write",
+        "cash.write",
+        "transfer.write"
+      ]
+    },
+    {
+      "clientId": "accounts-client",
+      "name": "Accounts service (Client Credentials)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "accounts-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": [],
+      "optionalClientScopes": ["notifications.write"]
+    },
+    {
+      "clientId": "cash-client",
+      "name": "Cash service (Client Credentials)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "cash-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": [],
+      "optionalClientScopes": ["accounts.write", "notifications.write"]
+    },
+    {
+      "clientId": "transfer-client",
+      "name": "Transfer service (Client Credentials)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "transfer-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": [],
+      "optionalClientScopes": ["accounts.write", "notifications.write"]
+    }
+  ],
+
+  "users": [
+    {
+      "username": "ivan",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Иван",
+      "lastName": "Иванов",
+      "email": "ivan@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "petr",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Пётр",
+      "lastName": "Петров",
+      "email": "petr@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "sidor",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Сидор",
+      "lastName": "Сидоров",
+      "email": "sidor@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

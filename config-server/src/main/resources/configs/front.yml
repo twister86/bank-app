@@ -1,0 +1,23 @@
+server:
+  port: 8085
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: front-client
+            client-secret: ${FRONT_CLIENT_SECRET:front-secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid,profile,accounts.read,accounts.write,cash.write,transfer.write
+        provider:
+          keycloak:
+            issuer-uri: ${keycloak.issuer-uri-external}
+            user-name-attribute: preferred_username
+
+services:
+  gateway:
+    url: ${GATEWAY_URL:http://localhost:8080}

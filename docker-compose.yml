@@ -1,0 +1,153 @@
+# docker-compose.yml
+# Запускается из корня репозитория: `docker compose up -d`
+# На первом старте:
+#   - Postgres прогоняет /docker/init-db.sql → создаёт схемы
+#   - Keycloak импортирует realm my-bank со всеми клиентами/пользователями
+#   - Eureka и Config Server стартуют первыми
+#   - Прикладные сервисы ждут Config Server (healthcheck) и Eureka
+#
+
+name: my-bank
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mb-postgres
+    environment:
+      POSTGRES_DB: bank
+      POSTGRES_USER: bank
+      POSTGRES_PASSWORD: bank
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # init-db.sql отрабатывает один раз при первом создании БД
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bank -d bank"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.1
+    container_name: mb-keycloak
+    command: ["start-dev", "--import-realm", "--http-port=8180"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+      # Чтобы JWT-токены были валидны и для браузера (localhost:8180),
+      # и для сервисов внутри Docker-сети (keycloak:8180), используем
+      # одинаковый hostname. Проставим hostname "localhost" — тогда
+      # issuer в токене = http://localhost:8180/realms/my-bank, а
+      # сервисы будут обращаться к Keycloak через keycloak:8180 и
+      # резолвить issuer как доверенный (настроим в коде ниже).
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME: "localhost"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "8180:8180"
+    volumes:
+      - ./keycloak/my-bank-realm.json:/opt/keycloak/data/import/my-bank-realm.json:ro
+    healthcheck:
+      # Health endpoint на management-порту 9000 (встроен в Keycloak 26).
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8180 && echo -e 'GET /realms/my-bank/.well-known/openid-configuration HTTP/1.0\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  eureka:
+    build:
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    container_name: mb-eureka
+    ports:
+      - "8761:8761"
+    environment:
+      EUREKA_HOST: eureka
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health 2>/dev/null | grep -q UP || exit 0"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    container_name: mb-config-server
+    ports:
+      - "8888:8888"
+    environment:
+      EUREKA_HOST: eureka
+    depends_on:
+      eureka:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health 2>/dev/null | grep -q UP || exit 0"]
+      interval: 10s
+      timeout: 3s
+      retries: 15
+      start_period: 30s
+
+  accounts-service:
+    build:
+      context: .
+      dockerfile: accounts-service/Dockerfile
+    container_name: mb-accounts
+    ports:
+      - "8081:8081"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: bank
+      DB_USER: bank
+      DB_PASSWORD: bank
+      # Issuer claim в токене = EXTERNAL URL (Keycloak кладёт его
+      # исходя из KC_HOSTNAME=localhost). Resource server валидирует
+      # issuer по этой строке → используем её же.
+      # INTERNAL URL — реальный сетевой путь: jwk-set-uri и token-uri
+      # идут по keycloak:8180 внутри Docker-сети.
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+      ACCOUNTS_CLIENT_SECRET: accounts-secret
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_started
+      eureka:
+        condition: service_started
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: mb-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+      GATEWAY_CLIENT_SECRET: gateway-secret
+    depends_on:
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_started
+      eureka:
+        condition: service_started
+      accounts-service:
+        condition: service_started
+
+volumes:
+  postgres-data:

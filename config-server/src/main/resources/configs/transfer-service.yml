@@ -1,0 +1,23 @@
+server:
+  port: 8083
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          transfer-client:
+            provider: keycloak
+            client-id: transfer-client
+            client-secret: ${TRANSFER_CLIENT_SECRET:transfer-secret}
+            authorization-grant-type: client_credentials
+            scope: accounts.write,notifications.write
+        provider:
+          keycloak:
+            token-uri: ${keycloak.issuer-uri-internal}/protocol/openid-connect/token
+
+services:
+  accounts:
+    url: http://accounts-service
+  notifications:
+    url: http://notifications-service

@@ -1,0 +1,31 @@
+# Сидим тестовые аккаунты. Логины ДОЛЖНЫ совпадать с пользователями
+# в Keycloak realm my-bank (см. keycloak/realm-export.json).
+databaseChangeLog:
+  - changeSet:
+      id: 002-seed-test-accounts
+      author: nikolai
+      changes:
+        - insert:
+            tableName: accounts
+            columns:
+              - column: { name: login,     value: ivan }
+              - column: { name: name,      value: "Иванов Иван" }
+              - column: { name: birthdate, valueDate: "1990-05-15" }
+              - column: { name: balance,   valueNumeric: 1000.00 }
+              - column: { name: version,   valueNumeric: 0 }
+        - insert:
+            tableName: accounts
+            columns:
+              - column: { name: login,     value: petr }
+              - column: { name: name,      value: "Петров Пётр" }
+              - column: { name: birthdate, valueDate: "1985-11-20" }
+              - column: { name: balance,   valueNumeric: 500.00 }
+              - column: { name: version,   valueNumeric: 0 }
+        - insert:
+            tableName: accounts
+            columns:
+              - column: { name: login,     value: sidor }
+              - column: { name: name,      value: "Сидоров Сидор" }
+              - column: { name: birthdate, valueDate: "1992-03-08" }
+              - column: { name: balance,   valueNumeric: 2000.00 }
+              - column: { name: version,   valueNumeric: 0 }

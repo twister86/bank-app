@@ -1,0 +1,5 @@
+server:
+  port: 8084
+
+# Notifications — простой resource server, не делает исходящих запросов.
+# Только принимает вызовы от accounts/cash/transfer и пишет в лог.

@@ -1,0 +1,23 @@
+server:
+  port: 8082
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          cash-client:
+            provider: keycloak
+            client-id: cash-client
+            client-secret: ${CASH_CLIENT_SECRET:cash-secret}
+            authorization-grant-type: client_credentials
+            scope: accounts.write,notifications.write
+        provider:
+          keycloak:
+            token-uri: ${keycloak.issuer-uri-internal}/protocol/openid-connect/token
+
+services:
+  accounts:
+    url: http://accounts-service
+  notifications:
+    url: http://notifications-service
