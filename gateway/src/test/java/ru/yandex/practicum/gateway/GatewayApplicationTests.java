@@ -22,7 +22,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>actuator доступен без аутентификации.</li>
  * </ul>
  * Реальный проброс JWT в downstream проверяется на интеграционном уровне
- * (Этап 3, contract-тесты между cash и accounts).
  */
 @SpringBootTest
 @AutoConfigureMockMvc

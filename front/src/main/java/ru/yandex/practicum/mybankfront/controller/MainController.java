@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Контроллер main.html. После редизайна на этапе 4 вся работа делегируется
+ * Контроллер main.html.
  * {@link BankApiClient} — контроллер только транслирует HTTP формы в вызовы
  * Gateway API и наполняет Thymeleaf-модель.
  * <p>
