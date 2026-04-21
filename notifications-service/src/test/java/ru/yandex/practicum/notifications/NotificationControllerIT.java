@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.notifications.dto.NotificationRequest;
 
@@ -18,6 +19,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+        "spring.cloud.config.enabled=false",
+        "spring.cloud.discovery.enabled=false",
+        "spring.cloud.service-registry.auto-registration.enabled=false",
+        "eureka.client.enabled=false",
+        "spring.config.import=optional:configserver:"
+})
 class NotificationControllerIT {
 
     @Autowired

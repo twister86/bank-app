@@ -37,6 +37,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         ids = "ru.yandex.practicum:accounts-service:+:stubs",
         stubsMode = StubRunnerProperties.StubsMode.LOCAL
 )
+@TestPropertySource(properties = {
+    "spring.cloud.config.enabled=false",
+            "spring.cloud.discovery.enabled=false",
+            "spring.cloud.service-registry.auto-registration.enabled=false",
+            "eureka.client.enabled=false",
+            "spring.config.import=optional:configserver:"
+})
 class AccountsClientContractTest {
 
     @Autowired

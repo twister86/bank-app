@@ -1,5 +1,8 @@
 package ru.yandex.practicum.accounts.contract;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
@@ -20,18 +23,6 @@ import java.time.LocalDate;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
-/**
- * Базовый класс для тестов, сгенерированных Spring Cloud Contract по
- * groovy-контрактам из {@code src/test/resources/contracts/accounts/}.
- * <p>
- * Тесты запускаются без реального контекста Spring — только MockMvc +
- * замоканные зависимости. Это делает контрактные тесты быстрыми и
- * не требующими внешних зависимостей (БД, Keycloak, Eureka).
- * <p>
- * Авторизация намеренно НЕ проверяется — контракт описывает только
- * форму запроса/ответа. Для тестов безопасности используется
- * отдельный IT-тест (AccountControllerIT).
- */
 public abstract class AccountsContractBase {
 
     @BeforeEach
@@ -40,7 +31,6 @@ public abstract class AccountsContractBase {
         AccountRepository accountRepository = Mockito.mock(AccountRepository.class);
         AccountService accountService = new AccountService(accountRepository, notificationsClient);
 
-        // Мокируем ответы, соответствующие контрактам.
         AccountResponse ivanAfterDeposit = new AccountResponse(
                 "ivan", "Иванов Иван", LocalDate.of(1990, 5, 15), new BigDecimal("1100.00"));
 
@@ -49,11 +39,17 @@ public abstract class AccountsContractBase {
                 .when(spiedService).deposit(eq("ivan"), any(BalanceChangeRequest.class));
         Mockito.doThrow(new InsufficientFundsException())
                 .when(spiedService).withdraw(eq("ivan"), any(BalanceChangeRequest.class));
+        ObjectMapper mapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        MappingJackson2HttpMessageConverter jsonConverter =
+                new MappingJackson2HttpMessageConverter(mapper);
+        jsonConverter.setDefaultCharset(java.nio.charset.StandardCharsets.UTF_8);
 
         AccountController controller = new AccountController(spiedService);
         RestAssuredMockMvc.standaloneSetup(MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
-                .setMessageConverters(new MappingJackson2HttpMessageConverter()));
+                .setMessageConverters(jsonConverter));
     }
 }
