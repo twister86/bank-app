@@ -3,7 +3,12 @@
 databaseChangeLog:
   - changeSet:
       id: 002-seed-test-accounts
-      author: nikolai
+      author: nikolay
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM accounts.accounts
       changes:
         - insert:
             tableName: accounts

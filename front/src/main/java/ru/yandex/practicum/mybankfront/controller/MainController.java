@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Контроллер main.html.
+ * Контроллер main.html. После редизайна на этапе 4 вся работа делегируется
  * {@link BankApiClient} — контроллер только транслирует HTTP формы в вызовы
  * Gateway API и наполняет Thymeleaf-модель.
  * <p>
@@ -108,22 +108,35 @@ public class MainController {
             others = api.getOtherAccounts();
         } catch (GatewayApiException e) {
             log.error("Не удалось получить данные аккаунта: {}", e.getMessage());
-            // Аккуратная деградация: страница отрисуется с ошибкой, но не упадёт.
-            model.addAttribute("name", "");
-            model.addAttribute("birthdate", LocalDate.now().format(DateTimeFormatter.ISO_DATE));
-            model.addAttribute("sum", BigDecimal.ZERO);
-            model.addAttribute("accounts", Collections.emptyList());
-            model.addAttribute("errors", List.of("Сервис недоступен: " + e.getMessage()));
-            model.addAttribute("info", null);
+            fillDegradedModel(model, "Сервис недоступен: " + e.getMessage());
+            return;
+        } catch (Exception e) {
+            log.error("Неожиданная ошибка при вызове API: {}", e.toString());
+            fillDegradedModel(model, "Ошибка API: " + e.getMessage());
             return;
         }
 
-        model.addAttribute("name", me.name());
+        if (me == null) {
+            log.error("Gateway вернул пустой ответ на /api/accounts/me — проверьте routes в gateway.yml");
+            fillDegradedModel(model, "Пустой ответ от Gateway (route не настроен?)");
+            return;
+        }
+
+        model.addAttribute("name", me.name() != null ? me.name() : "");
         model.addAttribute("birthdate",
                 me.birthdate() != null ? me.birthdate().format(DateTimeFormatter.ISO_DATE) : "");
-        model.addAttribute("sum", me.balance());
-        model.addAttribute("accounts", others);
+        model.addAttribute("sum", me.balance() != null ? me.balance() : BigDecimal.ZERO);
+        model.addAttribute("accounts", others != null ? others : Collections.emptyList());
         model.addAttribute("errors", errors);
         model.addAttribute("info", info);
+    }
+
+    private void fillDegradedModel(Model model, String errorMessage) {
+        model.addAttribute("name", "");
+        model.addAttribute("birthdate", LocalDate.now().format(DateTimeFormatter.ISO_DATE));
+        model.addAttribute("sum", BigDecimal.ZERO);
+        model.addAttribute("accounts", Collections.emptyList());
+        model.addAttribute("errors", List.of(errorMessage));
+        model.addAttribute("info", null);
     }
 }

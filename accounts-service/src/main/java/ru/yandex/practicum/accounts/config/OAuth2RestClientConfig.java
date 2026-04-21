@@ -30,6 +30,12 @@ public class OAuth2RestClientConfig {
         OAuth2ClientHttpRequestInterceptor oauth2Interceptor =
                 new OAuth2ClientHttpRequestInterceptor(authorizedClientManager);
         oauth2Interceptor.setClientRegistrationIdResolver(request -> "accounts-client");
+        oauth2Interceptor.setPrincipalResolver(request ->
+                new org.springframework.security.authentication.AnonymousAuthenticationToken(
+                        "accounts-client",
+                        "accounts-client",
+                        java.util.List.of(new org.springframework.security.core.authority
+                                .SimpleGrantedAuthority("ROLE_ANONYMOUS"))));
 
         return RestClient.builder()
                 .requestInterceptor(new LoadBalancerInterceptor(loadBalancerClient))

@@ -28,10 +28,11 @@ public class OAuth2RestClientConfig {
     public RestClient gatewayRestClient(OAuth2AuthorizedClientManager authorizedClientManager) {
         OAuth2ClientHttpRequestInterceptor oauth2 =
                 new OAuth2ClientHttpRequestInterceptor(authorizedClientManager);
-        // Фиксируем registration-id — у нас только один провайдер (keycloak).
         oauth2.setClientRegistrationIdResolver(req -> "keycloak");
         return RestClient.builder()
                 .requestInterceptor(oauth2)
                 .build();
     }
 }
+
+

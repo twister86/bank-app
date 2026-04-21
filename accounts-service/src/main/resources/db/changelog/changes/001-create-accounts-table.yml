@@ -1,7 +1,13 @@
 databaseChangeLog:
   - changeSet:
       id: 001-create-accounts-table
-      author: nikolai
+      author: nikolay
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: accounts
+                schemaName: accounts
       changes:
         - createTable:
             tableName: accounts

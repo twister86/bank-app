@@ -24,9 +24,9 @@ import java.util.Map;
  * Клиент Gateway API. Все HTTP-запросы идут через единую точку входа
  * (Gateway) с пробросом JWT пользователя (TokenRelay на стороне Gateway).
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class BankApiClient {
 
     private final RestClient gatewayRestClient;

@@ -33,17 +33,9 @@ services:
     container_name: mb-keycloak
     command: ["start-dev", "--import-realm", "--http-port=8180"]
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_HEALTH_ENABLED: "true"
-      # Чтобы JWT-токены были валидны и для браузера (localhost:8180),
-      # и для сервисов внутри Docker-сети (keycloak:8180), используем
-      # одинаковый hostname. Проставим hostname "localhost" — тогда
-      # issuer в токене = http://localhost:8180/realms/my-bank, а
-      # сервисы будут обращаться к Keycloak через keycloak:8180 и
-      # резолвить issuer как доверенный (настроим в коде ниже).
+      KC_HOSTNAME: "http://localhost:8180"
       KC_HOSTNAME_STRICT: "false"
-      KC_HOSTNAME: "localhost"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HTTP_ENABLED: "true"
     ports:
       - "8180:8180"
@@ -51,7 +43,7 @@ services:
       - ./keycloak/my-bank-realm.json:/opt/keycloak/data/import/my-bank-realm.json:ro
     healthcheck:
       # Health endpoint на management-порту 9000 (встроен в Keycloak 26).
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8180 && echo -e 'GET /realms/my-bank/.well-known/openid-configuration HTTP/1.0\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q 'UP'" ]
       interval: 10s
       timeout: 5s
       retries: 30
@@ -107,11 +99,6 @@ services:
       DB_NAME: bank
       DB_USER: bank
       DB_PASSWORD: bank
-      # Issuer claim в токене = EXTERNAL URL (Keycloak кладёт его
-      # исходя из KC_HOSTNAME=localhost). Resource server валидирует
-      # issuer по этой строке → используем её же.
-      # INTERNAL URL — реальный сетевой путь: jwk-set-uri и token-uri
-      # идут по keycloak:8180 внутри Docker-сети.
       KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
       KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
       ACCOUNTS_CLIENT_SECRET: accounts-secret
