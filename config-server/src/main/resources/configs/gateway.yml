@@ -52,8 +52,3 @@ spring:
             jwk-set-uri: ${keycloak.issuer-uri-internal}/protocol/openid-connect/certs
             user-info-uri: ${keycloak.issuer-uri-internal}/protocol/openid-connect/userinfo
             user-name-attribute: preferred_username
-
-logging:
-  level:
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.security: DEBUG

@@ -12,20 +12,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Smoke-тест Gateway'я.
- * <p>
- * Проверяет, что:
- * <ul>
- *   <li>контекст поднимается (т.е. все конфиги валидны и совместимы);</li>
- *   <li>анонимный запрос в защищённый роут перенаправляет на Keycloak OAuth2 login;</li>
- *   <li>actuator доступен без аутентификации.</li>
- * </ul>
- * Реальный проброс JWT в downstream проверяется на интеграционном уровне
- */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
 @TestPropertySource(properties = {
         "spring.cloud.config.enabled=false",
         "spring.cloud.discovery.enabled=false",
@@ -33,6 +19,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "eureka.client.enabled=false",
         "spring.config.import=optional:configserver:"
 })
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
 class GatewayApplicationTests {
 
     @Autowired
@@ -40,14 +29,18 @@ class GatewayApplicationTests {
 
     @Test
     void contextLoads() {
-        // noop — если контекст не поднимется, тест упадёт автоматически
     }
 
     @Test
-    void anonymousRequest_redirectsToKeycloakLogin() throws Exception {
+    void anonymousApiRequest_returns401() throws Exception {
         mockMvc.perform(get("/api/accounts/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void anonymousBrowserRequest_redirectsToKeycloakLogin() throws Exception {
+        mockMvc.perform(get("/some-browser-page"))
                 .andExpect(status().is3xxRedirection())
-                // Spring Security отправит на /oauth2/authorization/keycloak
                 .andExpect(redirectedUrlPattern("**/oauth2/authorization/keycloak"));
     }
 
