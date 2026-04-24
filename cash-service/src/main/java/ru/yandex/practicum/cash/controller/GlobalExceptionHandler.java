@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.yandex.practicum.cash.exception.AccountsOperationFailedException;
+import ru.yandex.practicum.cash.exception.AccountsUnavailableException;
 
 import java.time.Instant;
 import java.util.Map;
@@ -19,6 +20,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleAccounts(AccountsOperationFailedException ex) {
         HttpStatusCode status = HttpStatusCode.valueOf(ex.status());
         return build(status, ex.getMessage());
+    }
+
+    /**
+     * Accounts-service недоступен (circuit breaker открыт либо все retry
+     * исчерпаны). 503 Service Unavailable — корректный код для такого случая,
+     * клиент (фронт) должен показать пользователю "попробуйте позже".
+     */
+    @ExceptionHandler(AccountsUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnavailable(AccountsUnavailableException ex) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

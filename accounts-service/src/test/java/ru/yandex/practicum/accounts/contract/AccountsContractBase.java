@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import ru.yandex.practicum.accounts.client.NotificationsClient;
 import ru.yandex.practicum.accounts.controller.AccountController;
 import ru.yandex.practicum.accounts.controller.GlobalExceptionHandler;
 import ru.yandex.practicum.accounts.dto.AccountResponse;
@@ -23,14 +22,26 @@ import java.time.LocalDate;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
+/**
+ * Базовый класс для тестов, сгенерированных Spring Cloud Contract по
+ * groovy-контрактам из {@code src/test/resources/contracts/accounts/}.
+ * <p>
+ * Тесты запускаются без реального контекста Spring — только MockMvc +
+ * замоканные зависимости. Это делает контрактные тесты быстрыми и
+ * не требующими внешних зависимостей (БД, Keycloak, Eureka).
+ * <p>
+ * Авторизация намеренно НЕ проверяется — контракт описывает только
+ * форму запроса/ответа. Для тестов безопасности используется
+ * отдельный IT-тест (AccountControllerIT).
+ */
 public abstract class AccountsContractBase {
 
     @BeforeEach
     void setUp() {
-        NotificationsClient notificationsClient = Mockito.mock(NotificationsClient.class);
         AccountRepository accountRepository = Mockito.mock(AccountRepository.class);
-        AccountService accountService = new AccountService(accountRepository, notificationsClient);
+        AccountService accountService = new AccountService(accountRepository);
 
+        // Мокируем ответы, соответствующие контрактам.
         AccountResponse ivanAfterDeposit = new AccountResponse(
                 "ivan", "Иванов Иван", LocalDate.of(1990, 5, 15), new BigDecimal("1100.00"));
 
@@ -39,11 +50,19 @@ public abstract class AccountsContractBase {
                 .when(spiedService).deposit(eq("ivan"), any(BalanceChangeRequest.class));
         Mockito.doThrow(new InsufficientFundsException())
                 .when(spiedService).withdraw(eq("ivan"), any(BalanceChangeRequest.class));
+
+        // ObjectMapper с поддержкой java.time.LocalDate в ISO-формате.
+        // Без JavaTimeModule и WRITE_DATES_AS_TIMESTAMPS=false Jackson
+        // сериализует LocalDate как массив [year, month, day],
+        // и SCC-контракт с "birthdate": "1990-05-15" не матчится.
         ObjectMapper mapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         MappingJackson2HttpMessageConverter jsonConverter =
                 new MappingJackson2HttpMessageConverter(mapper);
+        // Явно прописываем UTF-8 — иначе на Windows MockMvc ответ идёт в
+        // cp1251/cp866, и кириллица в контракт-проверках превращается в мусор
+        // (╚трэют ╚трэ вместо "Иванов Иван").
         jsonConverter.setDefaultCharset(java.nio.charset.StandardCharsets.UTF_8);
 
         AccountController controller = new AccountController(spiedService);

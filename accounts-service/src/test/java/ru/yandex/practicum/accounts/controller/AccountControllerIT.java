@@ -5,18 +5,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import ru.yandex.practicum.accounts.client.NotificationsClient;
 import ru.yandex.practicum.accounts.dto.BalanceChangeRequest;
 import ru.yandex.practicum.accounts.dto.UpdateAccountRequest;
 
@@ -38,17 +34,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * spring-security-test, который подсовывает mock-JWT в SecurityContext.
  * Конфигурация resource server при этом остаётся реальной.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers
-@ActiveProfiles("test")
-@TestPropertySource(properties = {
+// Properties через @TestPropertySource применяются ДО bootstrap (в отличие от
+// application-test.yml, который читается слишком поздно). Это единственный способ
+// отключить config client, если в classpath есть spring-cloud-starter-bootstrap.
+@org.springframework.test.context.TestPropertySource(properties = {
         "spring.cloud.config.enabled=false",
         "spring.cloud.discovery.enabled=false",
         "spring.cloud.service-registry.auto-registration.enabled=false",
         "eureka.client.enabled=false",
         "spring.config.import=optional:configserver:"
 })
+@SpringBootTest
+@AutoConfigureMockMvc
+@Testcontainers
+@ActiveProfiles("test")
 class AccountControllerIT {
 
     @Container
@@ -83,10 +82,6 @@ class AccountControllerIT {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    /** NotificationsClient замокан, чтобы не требовать реальный сервис. */
-    @MockitoBean
-    private NotificationsClient notificationsClient;
 
     @Test
     void getMe_returnsCurrentUserAccount() throws Exception {

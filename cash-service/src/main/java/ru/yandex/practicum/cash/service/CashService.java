@@ -22,6 +22,10 @@ public class CashService {
             case PUT -> accountsClient.deposit(login, request.amount());
             case GET -> accountsClient.withdraw(login, request.amount());
         };
+        // Ответственность за пользовательские уведомления — на cash-service
+        // (accounts-service уведомления НЕ шлёт, он чисто бухгалтерский).
+        // Если accounts упал → AccountsUnavailableException / бизнес-ошибка
+        // вылетят до этой строки, уведомление не отправится — корректно.
         String verb = request.action() == CashAction.PUT ? "Пополнение" : "Снятие";
         notificationsClient.sendNotification(login,
                 "%s на сумму %s руб выполнено".formatted(verb, request.amount()));

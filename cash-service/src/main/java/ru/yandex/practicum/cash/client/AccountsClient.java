@@ -2,6 +2,8 @@ package ru.yandex.practicum.cash.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,8 +12,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import ru.yandex.practicum.cash.dto.AccountSnapshot;
-import ru.yandex.practicum.cash.dto.CashOperationRequest;
 import ru.yandex.practicum.cash.exception.AccountsOperationFailedException;
+import ru.yandex.practicum.cash.exception.AccountsUnavailableException;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -20,11 +22,25 @@ import java.util.Map;
  * Клиент accounts-service. Вызывается из cash-service напрямую
  * (не через Gateway), авторизуется Client Credentials токеном
  * под client-id {@code cash-client}.
+ * <p>
+ * Устойчивость к сбоям обеспечивается Resilience4j:
+ * <ul>
+ *   <li>{@code @Retry} — 3 попытки с экспоненциальной задержкой при сетевых
+ *       ошибках (500/503/timeout). На бизнес-ошибки (409 Insufficient Funds)
+ *       retry НЕ делается — см. {@code ignore-exceptions} в application.yml.</li>
+ *   <li>{@code @CircuitBreaker} — если accounts-service падает чаще, чем в
+ *       50% последних 10 вызовов, прекращаем стучаться на 30 секунд.</li>
+ *   <li>{@code fallbackMethod} — при всех неудачах ВМЕСТО 500 во фронт уходит
+ *       {@link AccountsUnavailableException} с понятным текстом. Главное —
+ *       деньги НЕ меняются, уведомление НЕ отправляется.</li>
+ * </ul>
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class AccountsClient {
+
+    private static final String CIRCUIT = "accountsService";
 
     private final RestClient accountsRestClient;
     private final ObjectMapper objectMapper;
@@ -32,12 +48,16 @@ public class AccountsClient {
     @Value("${services.accounts.url}")
     private String accountsUrl;
 
-    /** Пополнение счёта (CashAction.PUT). */
+    /** Пополнение счёта. */
+    @Retry(name = CIRCUIT)
+    @CircuitBreaker(name = CIRCUIT, fallbackMethod = "onAccountsUnavailable")
     public AccountSnapshot deposit(String login, BigDecimal amount) {
         return exchange(login, "deposit", amount);
     }
 
-    /** Снятие со счёта (CashAction.GET). */
+    /** Снятие со счёта. */
+    @Retry(name = CIRCUIT)
+    @CircuitBreaker(name = CIRCUIT, fallbackMethod = "onAccountsUnavailable")
     public AccountSnapshot withdraw(String login, BigDecimal amount) {
         return exchange(login, "withdraw", amount);
     }
@@ -56,6 +76,22 @@ public class AccountsClient {
                             resp.getStatusCode().value(), message);
                 })
                 .body(AccountSnapshot.class);
+    }
+
+    /**
+     * Fallback вызывается, когда все retry-попытки исчерпаны или circuit breaker
+     * открыт. ВАЖНО: бизнес-ошибки ({@link AccountsOperationFailedException}) сюда
+     * НЕ попадают (см. ignore-exceptions в application.yml) — они проходят
+     * насквозь, чтобы пользователь получил внятное сообщение вроде "недостаточно
+     * средств", а не технический fallback-текст.
+     */
+    @SuppressWarnings("unused") // вызывается рефлексией Resilience4j
+    private AccountSnapshot onAccountsUnavailable(String login, BigDecimal amount,
+                                                   Throwable ex) {
+        log.error("Accounts-service недоступен (login={}, amount={}): {}",
+                login, amount, ex.toString());
+        throw new AccountsUnavailableException(
+                "Сервис счетов временно недоступен, попробуйте через минуту");
     }
 
     /**

@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.yandex.practicum.accounts.client.NotificationsClient;
 import ru.yandex.practicum.accounts.dto.AccountResponse;
 import ru.yandex.practicum.accounts.dto.AccountSummary;
 import ru.yandex.practicum.accounts.dto.BalanceChangeRequest;
@@ -28,7 +27,6 @@ public class AccountService {
     private static final int MIN_AGE_YEARS = 18;
 
     private final AccountRepository accountRepository;
-    private final NotificationsClient notificationsClient;
 
     @Transactional(readOnly = true)
     public AccountResponse getByLogin(String login) {
@@ -60,19 +58,25 @@ public class AccountService {
 
     /**
      * Пополнение счёта. Вызывается cash-service'ом по JWT Client Credentials.
+     * <p>
+     * Уведомления НЕ отправляем отсюда: accounts-service — "бухгалтерский"
+     * Решение
+     * об отправке уведомления остаётся за вызывающим бизнес-сервисом
+     * (cash-service или transfer-service) — они знают контекст операции и
+     * могут сформулировать осмысленное сообщение.
      */
     @Transactional
     public AccountResponse deposit(String login, BalanceChangeRequest request) {
         Account account = findByLoginOrThrow(login);
         account.setBalance(account.getBalance().add(request.amount()));
-        notificationsClient.sendNotification(login,
-                "На ваш счёт зачислено %s руб".formatted(request.amount()));
         return toResponse(account);
     }
 
     /**
      * Снятие со счёта. Вызывается cash-service и transfer-service.
      * Проверяет достаточность средств.
+     * <p>
+     * Уведомления НЕ отправляем отсюда — см. javadoc к {@link #deposit}.
      */
     @Transactional
     public AccountResponse withdraw(String login, BalanceChangeRequest request) {
@@ -81,8 +85,6 @@ public class AccountService {
             throw new InsufficientFundsException();
         }
         account.setBalance(account.getBalance().subtract(request.amount()));
-        notificationsClient.sendNotification(login,
-                "Со счёта списано %s руб".formatted(request.amount()));
         return toResponse(account);
     }
 

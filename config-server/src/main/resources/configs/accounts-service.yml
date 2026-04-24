@@ -24,23 +24,7 @@ spring:
     default-schema: accounts
     liquibase-schema: accounts
 
-  # Accounts сам делает запросы в Notifications → он OAuth2 Client
-  # (Client Credentials Flow).
-  security:
-    oauth2:
-      client:
-        registration:
-          accounts-client:
-            provider: keycloak
-            client-id: accounts-client
-            client-secret: ${ACCOUNTS_CLIENT_SECRET:accounts-secret}
-            authorization-grant-type: client_credentials
-            scope: notifications.write
-        provider:
-          keycloak:
-            token-uri: ${keycloak.issuer-uri-internal}/protocol/openid-connect/token
-
-# URL'ы соседних сервисов — через Eureka (имена приложений).
-services:
-  notifications:
-    url: http://notifications-service
+# Accounts больше НЕ делает исходящих вызовов в другие сервисы:
+# уведомления об операциях шлют вызывающие сервисы (cash / transfer),
+# которые знают бизнес-контекст. Поэтому OAuth2 Client здесь не нужен —
+# только Resource Server из application.yml для валидации входящих JWT.

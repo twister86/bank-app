@@ -6,7 +6,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.yandex.practicum.accounts.client.NotificationsClient;
 import ru.yandex.practicum.accounts.dto.AccountResponse;
 import ru.yandex.practicum.accounts.dto.BalanceChangeRequest;
 import ru.yandex.practicum.accounts.dto.UpdateAccountRequest;
@@ -22,9 +21,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,9 +28,6 @@ class AccountServiceTest {
 
     @Mock
     private AccountRepository accountRepository;
-
-    @Mock
-    private NotificationsClient notificationsClient;
 
     @InjectMocks
     private AccountService service;
@@ -95,24 +88,22 @@ class AccountServiceTest {
     }
 
     @Test
-    void deposit_increasesBalanceAndSendsNotification() {
+    void deposit_increasesBalance() {
         when(accountRepository.findByLogin("ivan")).thenReturn(Optional.of(account));
 
         BalanceChangeRequest req = new BalanceChangeRequest(new BigDecimal("250.00"));
         AccountResponse result = service.deposit("ivan", req);
 
         assertThat(result.balance()).isEqualByComparingTo("1250.00");
-        verify(notificationsClient).sendNotification(anyString(), anyString());
     }
 
     @Test
-    void withdraw_decreasesBalanceAndSendsNotification() {
+    void withdraw_decreasesBalance() {
         when(accountRepository.findByLogin("ivan")).thenReturn(Optional.of(account));
 
         BalanceChangeRequest req = new BalanceChangeRequest(new BigDecimal("400.00"));
         AccountResponse result = service.withdraw("ivan", req);
 
         assertThat(result.balance()).isEqualByComparingTo("600.00");
-        verify(notificationsClient).sendNotification(anyString(), anyString());
     }
 }

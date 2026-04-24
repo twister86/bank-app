@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.yandex.practicum.transfer.exception.AccountsOperationFailedException;
+import ru.yandex.practicum.transfer.exception.AccountsUnavailableException;
 import ru.yandex.practicum.transfer.exception.TransferValidationException;
 
 import java.time.Instant;
@@ -19,6 +20,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccountsOperationFailedException.class)
     public ResponseEntity<Map<String, Object>> handleAccounts(AccountsOperationFailedException ex) {
         return build(HttpStatusCode.valueOf(ex.status()), ex.getMessage());
+    }
+
+    /**
+     * Accounts-service недоступен (открыт circuit breaker либо все retry
+     * исчерпаны). 503 Service Unavailable — клиенту сигнал попробовать позже.
+     */
+    @ExceptionHandler(AccountsUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnavailable(AccountsUnavailableException ex) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
     @ExceptionHandler(TransferValidationException.class)
