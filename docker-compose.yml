@@ -1,0 +1,233 @@
+# docker-compose.yml
+# Запускается из корня репозитория: `docker compose up -d`
+# На первом старте:
+#   - Postgres прогоняет /docker/init-db.sql → создаёт схемы
+#   - Keycloak импортирует realm my-bank со всеми клиентами/пользователями
+#   - Eureka и Config Server стартуют первыми
+#   - Прикладные сервисы ждут Config Server (healthcheck) и Eureka
+
+name: my-bank
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mb-postgres
+    environment:
+      POSTGRES_DB: bank
+      POSTGRES_USER: bank
+      POSTGRES_PASSWORD: bank
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # init-db.sql отрабатывает один раз при первом создании БД
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bank -d bank"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.1
+    container_name: mb-keycloak
+    command: ["start-dev", "--import-realm", "--http-port=8180"]
+    environment:
+      KC_HOSTNAME: "http://localhost:8180"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "8180:8180"
+    volumes:
+      - ./keycloak/my-bank-realm.json:/opt/keycloak/data/import/my-bank-realm.json:ro
+    healthcheck:
+      # Health endpoint на management-порту 9000 (встроен в Keycloak 26).
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q 'UP'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  eureka:
+    build:
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    container_name: mb-eureka
+    ports:
+      - "8761:8761"
+    environment:
+      EUREKA_HOST: eureka
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO - http://localhost:8761/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    container_name: mb-config-server
+    ports:
+      - "8888:8888"
+    environment:
+      EUREKA_HOST: eureka
+    depends_on:
+      eureka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO - http://localhost:8888/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 45s
+
+  accounts-service:
+    build:
+      context: .
+      dockerfile: accounts-service/Dockerfile
+    container_name: mb-accounts
+    ports:
+      - "8081:8081"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: bank
+      DB_USER: bank
+      DB_PASSWORD: bank
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+      ACCOUNTS_CLIENT_SECRET: accounts-secret
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: mb-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+      GATEWAY_CLIENT_SECRET: gateway-secret
+    depends_on:
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+      accounts-service:
+        condition: service_started
+
+  notifications-service:
+    build:
+      context: .
+      dockerfile: notifications-service/Dockerfile
+    container_name: mb-notifications
+    ports:
+      - "8084:8084"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+    depends_on:
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+
+  cash-service:
+    build:
+      context: .
+      dockerfile: cash-service/Dockerfile
+    container_name: mb-cash
+    ports:
+      - "8082:8082"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+      CASH_CLIENT_SECRET: cash-secret
+    depends_on:
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+      accounts-service:
+        condition: service_started
+      notifications-service:
+        condition: service_started
+
+  transfer-service:
+    build:
+      context: .
+      dockerfile: transfer-service/Dockerfile
+    container_name: mb-transfer
+    ports:
+      - "8083:8083"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+      TRANSFER_CLIENT_SECRET: transfer-secret
+    depends_on:
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+      accounts-service:
+        condition: service_started
+      notifications-service:
+        condition: service_started
+
+  front:
+    build:
+      context: .
+      dockerfile: front/Dockerfile
+    container_name: mb-front
+    ports:
+      - "8085:8085"
+    environment:
+      CONFIG_SERVER_URI: http://config-server:8888
+      EUREKA_URI: http://eureka:8761/eureka/
+      KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
+      KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
+      FRONT_CLIENT_SECRET: front-secret
+      GATEWAY_URL: http://gateway:8080
+    depends_on:
+      keycloak:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+      gateway:
+        condition: service_started
+
+volumes:
+  postgres-data:

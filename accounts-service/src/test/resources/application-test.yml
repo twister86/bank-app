@@ -1,0 +1,25 @@
+# Профиль test используется в интеграционных тестах.
+# Отключает всю внешнюю инфраструктуру: Eureka, Config Server, Keycloak.
+spring:
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+    discovery:
+      enabled: false
+  config:
+    # Отключаем bootstrap-загрузку конфига
+    import: ""
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+# Mock issuer-uri — не будет обращения к реальному Keycloak,
+# т.к. JWT подменяется mock'ом в тестах.
+services:
+  notifications:
+    url: http://notifications-service

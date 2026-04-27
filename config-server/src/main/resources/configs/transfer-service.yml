@@ -1,0 +1,71 @@
+server:
+  port: 8083
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          transfer-client:
+            provider: keycloak
+            client-id: transfer-client
+            client-secret: ${TRANSFER_CLIENT_SECRET:transfer-secret}
+            authorization-grant-type: client_credentials
+            scope: accounts.write,notifications.write
+        provider:
+          keycloak:
+            token-uri: ${keycloak.issuer-uri-internal}/protocol/openid-connect/token
+
+services:
+  accounts:
+    url: http://accounts-service
+  notifications:
+    url: http://notifications-service
+
+# Resilience4j: поведение Retry и CircuitBreaker для inter-service вызовов.
+# Подробный комментарий — в cash-service.yml (конфиг симметричный).
+resilience4j:
+  retry:
+    instances:
+      accountsService:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        ignore-exceptions:
+          - ru.yandex.practicum.transfer.exception.AccountsOperationFailedException
+          - ru.yandex.practicum.transfer.exception.TransferValidationException
+      notificationsService:
+        max-attempts: 3
+        wait-duration: 300ms
+        exponential-backoff-multiplier: 2
+  circuitbreaker:
+    instances:
+      accountsService:
+        sliding-window-type: count_based
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        ignore-exceptions:
+          - ru.yandex.practicum.transfer.exception.AccountsOperationFailedException
+          - ru.yandex.practicum.transfer.exception.TransferValidationException
+      notificationsService:
+        sliding-window-type: count_based
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true

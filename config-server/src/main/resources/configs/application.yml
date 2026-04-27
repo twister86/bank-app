@@ -1,0 +1,54 @@
+# Общий конфиг, применяется ко ВСЕМ клиентам Config Server
+# (используется профиль `default` — активный по умолчанию).
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# Keycloak (OAuth 2.0 Authorization Server) — общие настройки.
+# Конкретные client-id/client-secret задаются уже в конфиге каждого сервиса.
+keycloak:
+  # Для обращения браузера пользователя (в Authorization Code Flow фронта)
+  # нужен URL, доступный снаружи Docker-сети.
+  issuer-uri-external: ${KEYCLOAK_ISSUER_EXTERNAL:http://localhost:8180/realms/my-bank}
+  # Для межсервисных вызовов (валидация JWT, Client Credentials)
+  # используется URL внутри Docker-сети.
+  issuer-uri-internal: ${KEYCLOAK_ISSUER_INTERNAL:http://localhost:8180/realms/my-bank}
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # issuer-uri используется ДЛЯ ВАЛИДАЦИИ issuer claim в JWT.
+          # Он должен совпадать с тем, что Keycloak кладёт в токен (iss).
+          # В Keycloak 26 с KC_HOSTNAME=localhost, Keycloak кладёт в iss
+          # "http://localhost:8180/realms/my-bank" — и для браузерных,
+          # и для internal-вызовов это один и тот же URL.
+          issuer-uri: ${keycloak.issuer-uri-external}
+          # jwk-set-uri указываем явно — чтобы сервис тянул ключи
+          # ЧЕРЕЗ DOCKER-СЕТЬ (keycloak:8180), а не через localhost
+          # (который из контейнера указывал бы на сам контейнер).
+          jwk-set-uri: ${keycloak.issuer-uri-internal}/protocol/openid-connect/certs
+
+logging:
+  level:
+    ru.yandex.practicum: DEBUG
+    org.springframework.security: INFO
+    org.springframework.web: INFO

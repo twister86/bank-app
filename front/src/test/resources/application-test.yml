@@ -1,0 +1,39 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+    discovery:
+      enabled: false
+  config:
+    import: ""
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: front-client
+            client-secret: test-secret
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid,profile
+        provider:
+          keycloak:
+            authorization-uri: http://localhost/fake/auth
+            token-uri: http://localhost/fake/token
+            jwk-set-uri: http://localhost/fake/jwks
+            user-info-uri: http://localhost/fake/userinfo
+            user-name-attribute: preferred_username
+
+eureka:
+  client:
+    enabled: false
+
+services:
+  gateway:
+    url: http://localhost/fake-gateway
+
+server:
+  port: 0

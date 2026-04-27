@@ -1,0 +1,39 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+    discovery:
+      enabled: false
+  config:
+    import: ""
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost/realms/test
+      client:
+        registration:
+          transfer-client:
+            provider: keycloak
+            client-id: transfer-client
+            client-secret: test
+            authorization-grant-type: client_credentials
+            scope: accounts.write,notifications.write
+        provider:
+          keycloak:
+            token-uri: http://localhost/fake/token
+
+eureka:
+  client:
+    enabled: false
+
+services:
+  accounts:
+    url: http://accounts-service
+  notifications:
+    url: http://notifications-service
+
+server:
+  port: 0

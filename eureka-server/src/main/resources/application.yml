@@ -1,0 +1,24 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: eureka-server
+
+# Eureka стоит один в кластере → запрещаем ему регистрироваться у самого себя
+# и получать реестр от соседей (их нет).
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:${server.port}/eureka/
+  server:
+    # В dev-режиме отключаем self-preservation, чтобы падения клиентов
+    # сразу отражались в реестре.
+    enable-self-preservation: false
+
+logging:
+  level:
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN
