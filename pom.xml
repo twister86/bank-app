@@ -19,9 +19,6 @@
     <description>My Bank microservices application (Sprint 9)</description>
 
     <modules>
-        <module>eureka-server</module>
-        <module>config-server</module>
-        <module>gateway</module>
         <module>accounts-service</module>
         <module>cash-service</module>
         <module>transfer-service</module>

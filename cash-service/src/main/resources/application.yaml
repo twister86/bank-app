@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: cash-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8081/realms/my-bank}
+          jwk-set-uri: ${OAUTH2_JWK_SET_URI:http://localhost:8081/realms/my-bank/protocol/openid-connect/certs}
+      client:
+        registration:
+          keycloak-accounts:
+            client-id: ${OAUTH2_CLIENT_ID:cash-client}
+            client-secret: ${OAUTH2_CLIENT_SECRET:cash-secret}
+            authorization-grant-type: client_credentials
+            scope: accounts.write
+            provider: keycloak
+          keycloak-notifications:
+            client-id: ${OAUTH2_CLIENT_ID:cash-client}
+            client-secret: ${OAUTH2_CLIENT_SECRET:cash-secret}
+            authorization-grant-type: client_credentials
+            scope: notifications.write
+            provider: keycloak
+        provider:
+          keycloak:
+            issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8081/realms/my-bank}
+
+server:
+  port: ${SERVER_PORT:8082}
+
+bank:
+  services:
+    accounts:
+      url: ${BANK_SERVICES_ACCOUNTS_URL:http://localhost:8080}
+    notifications:
+      url: ${BANK_SERVICES_NOTIFICATIONS_URL:http://localhost:8084}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+logging:
+  level:
+    ru.yandex.practicum.cash: ${LOGGING_LEVEL_APP:INFO}
