@@ -9,8 +9,13 @@ global:
   imageRegistry: ""
   imagePullPolicy: IfNotPresent
 
-  # Public hostnames behind the ingress controller. Override per
-  # environment in values-dev.yaml / values-prod.yaml.
+  # Bitnami chart guard — when image is overridden to bitnamilegacy/*
+  # the chart refuses to start unless this flag is set. We're using
+  # legacy images intentionally because Bitnami removed free tags in
+  # August 2025; for a learning project this is acceptable.
+  security:
+    allowInsecureImages: true
+
   ingressHost: bank.local
   authIngressHost: auth.bank.local
 
@@ -31,9 +36,10 @@ global:
   # The placeholder below keeps `helm template` working out of the box;
   # production installs MUST override it.
   hostAliases:
-    - ip: "127.0.0.1"   # placeholder — override at install time
+    - ip: "127.0.0.1"   # placeholder, перезапишется через --set
       hostnames:
-        - auth.bank.local
+        - auth.bank.dev.local
+        - bank.dev.local
 
 # ---- Umbrella-level Ingress smoke test --------------------------------
 
@@ -69,26 +75,31 @@ front-ui:
 keycloak:
   enabled: true
 
+  # Bitnami закрыл бесплатные образы в августе 2025; этот чарт по
+  # умолчанию ссылается на docker.io/bitnami/keycloak, который удалён.
+  # Переключаемся на репозиторий bitnamilegacy/* — это бэкап старых
+  # образов, доступный для read-only использования.
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/keycloak
+
   auth:
     adminUser: admin
-    adminPassword: admin   # override via --set or sealed values for prod
+    adminPassword: admin
 
-  # Single replica is enough for the practicum. Bitnami's chart can also
-  # do HA with PostgreSQL — flip replicaCount and proxy: edge if needed.
   replicaCount: 1
-  proxy: edge
+  #proxy: edge
 
-  # Enable the embedded PostgreSQL chart so Keycloak gets its own DB
-  # (separate from the bank microservices' DBs).
   postgresql:
     enabled: true
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/postgresql
     auth:
       username: keycloak
       database: keycloak
       password: keycloak
 
-  # Mount the realm JSON from keycloak-realm subchart's ConfigMap and
-  # tell Keycloak to import it on startup.
   extraStartupArgs: "--import-realm"
   extraVolumes:
     - name: realm-config

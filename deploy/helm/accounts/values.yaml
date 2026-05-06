@@ -31,20 +31,23 @@ config:
   SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "http://auth.bank.local/realms/bank"
   SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_AUTHORIZATION_GRANT_TYPE: "client_credentials"
   SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_SCOPE: "notifications.write"
-  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID: "accounts-service"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID: "accounts-client"
   # URLs of dependent services — DNS-resolved through Kubernetes Services.
-  BANK_SERVICES_NOTIFICATIONS_URL: "http://notifications:8080"
+  SERVICES_NOTIFICATIONS_URL: "http://notifications:8080"
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
   MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
 
 secrets:
   SPRING_DATASOURCE_PASSWORD: "accounts-pass"
-  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET: "change-me"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET: "accounts-secret"
 
 postgres:
   database: accounts
   username: accounts
   storage: 1Gi
+  initSql: |
+    CREATE SCHEMA IF NOT EXISTS accounts AUTHORIZATION accounts;
+    GRANT ALL ON SCHEMA accounts TO accounts;
   # storageClassName: standard   # uncomment to override the cluster default
 
 # Resource requests/limits — left unset by default. Set in
@@ -56,3 +59,4 @@ resources: {}
 global:
   imagePullPolicy: IfNotPresent
   hostAliases: []
+waitForOidc: "http://auth.bank.dev.local/realms/bank-dev/.well-known/openid-configuration"

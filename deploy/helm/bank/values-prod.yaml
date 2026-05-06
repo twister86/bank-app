@@ -68,7 +68,7 @@ front-ui:
     SPRING_PROFILES_ACTIVE: "k8s,prod"
     SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "https://auth.bank.prod.local/realms/bank-prod"
     SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_REDIRECT_URI: "https://bank.prod.local/login/oauth2/code/keycloak"
-    BANK_GATEWAY_URL: "https://bank.prod.local"
+    SERVICES_GATEWAY_URL: "https://bank.prod.local"
 
 keycloak-realm:
   realmsDir: realms-prod

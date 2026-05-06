@@ -42,7 +42,7 @@ server:
 bank:
   services:
     notifications:
-      url: ${BANK_SERVICES_NOTIFICATIONS_URL:http://localhost:8084}
+      url: ${SERVICES_NOTIFICATIONS_URL:http://localhost:8084}
 
 management:
   endpoints:

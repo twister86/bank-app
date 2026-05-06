@@ -1,13 +1,9 @@
 {{/*
 StatefulSet running a single PostgreSQL replica for one microservice.
 
-We deliberately use a per-service database (rather than one shared DB
-with multiple schemas) so each microservice can be scaled, backed up
-and migrated independently — the same boundary that exists between
-the services at the code level.
-
-The volumeClaimTemplate provisions storage from the default
-StorageClass. On Minikube that's `standard`, backed by hostPath.
+If `.Values.postgres.initSql` is set, an init script ConfigMap is
+mounted at /docker-entrypoint-initdb.d so the postgres image runs it
+on first boot (used to create per-service schemas before Liquibase).
 */}}
 {{- define "postgres.statefulset" -}}
 apiVersion: apps/v1
@@ -42,14 +38,9 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  # Reuse the application's Secret so the password is
-                  # defined exactly once in values.yaml.
                   name: {{ .Values.secretName | default (printf "%s-secret" (include "common-microservice.name" .)) }}
                   key: SPRING_DATASOURCE_PASSWORD
             - name: PGDATA
-              # Subdirectory inside the mounted volume — required when
-              # the volume root contains lost+found etc. Without it,
-              # initdb refuses to run on a non-empty directory.
               value: /var/lib/postgresql/data/pgdata
           readinessProbe:
             exec:
@@ -65,10 +56,21 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+            {{- if .Values.postgres.initSql }}
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+            {{- end }}
           {{- with .Values.postgres.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      {{- if .Values.postgres.initSql }}
+      volumes:
+        - name: init-scripts
+          configMap:
+            name: {{ include "postgres.fullname" . }}-init
+      {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: data

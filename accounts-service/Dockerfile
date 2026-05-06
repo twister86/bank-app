@@ -6,9 +6,6 @@ WORKDIR /workspace
 # Parent pom ссылается на все модули → чтобы реактор не падал,
 # копируем ВСЕ pom'ы модулей перед сборкой одного.
 COPY pom.xml .
-COPY eureka-server/pom.xml eureka-server/
-COPY config-server/pom.xml config-server/
-COPY gateway/pom.xml gateway/
 COPY accounts-service/pom.xml accounts-service/
 COPY cash-service/pom.xml cash-service/
 COPY transfer-service/pom.xml transfer-service/

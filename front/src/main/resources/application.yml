@@ -33,11 +33,11 @@ server:
 bank:
   services:
     accounts:
-      url: ${BANK_SERVICES_ACCOUNTS_URL:http://localhost:8080}
+      url: ${SERVICES_ACCOUNTS_URL:http://localhost:8080}
     cash:
-      url: ${BANK_SERVICES_CASH_URL:http://localhost:8082}
+      url: ${SERVICES_CASH_URL:http://localhost:8082}
     transfer:
-      url: ${BANK_SERVICES_TRANSFER_URL:http://localhost:8083}
+      url: ${SERVICES_TRANSFER_URL:http://localhost:8083}
 
 management:
   endpoints:

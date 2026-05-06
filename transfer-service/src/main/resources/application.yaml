@@ -32,9 +32,9 @@ server:
 bank:
   services:
     accounts:
-      url: ${BANK_SERVICES_ACCOUNTS_URL:http://localhost:8080}
+      url: ${SERVICES_ACCOUNTS_URL:http://localhost:8080}
     notifications:
-      url: ${BANK_SERVICES_NOTIFICATIONS_URL:http://localhost:8084}
+      url: ${SERVICES_NOTIFICATIONS_URL:http://localhost:8084}
 
 management:
   endpoints:

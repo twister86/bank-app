@@ -3,7 +3,9 @@ kind: Pod
 metadata:
   name: "{{ .Release.Name }}-front-ui-test"
   labels:
-    {{- include "common-microservice.labels" . | nindent 4 }}
+    app.kubernetes.io/name: front-ui-test
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: bank
   annotations:
     "helm.sh/hook": test
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded

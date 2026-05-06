@@ -218,7 +218,7 @@ services:
       KEYCLOAK_ISSUER_INTERNAL: http://keycloak:8180/realms/my-bank
       KEYCLOAK_ISSUER_EXTERNAL: http://localhost:8180/realms/my-bank
       FRONT_CLIENT_SECRET: front-secret
-      GATEWAY_URL: http://gateway:8080
+      SERVICES_GATEWAY_URL: http://gateway:8080
     depends_on:
       keycloak:
         condition: service_started
