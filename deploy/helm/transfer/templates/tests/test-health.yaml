@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-transfer-test"
+  labels:
+    {{- include "common-microservice.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: probe
+      image: curlimages/curl:8.5.0
+      command:
+        - sh
+        - -ec
+        - |
+          for i in $(seq 1 30); do
+            if curl -fsS http://transfer:8080/actuator/health/readiness; then
+              echo
+              echo "==> transfer is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "transfer did not become ready in time"
+          exit 1

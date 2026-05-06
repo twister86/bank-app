@@ -1,0 +1,31 @@
+replicas: 1
+port: 8080
+
+image:
+  repository: bank/notifications-service
+  tag: "1.1.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+config:
+  SPRING_PROFILES_ACTIVE: "k8s"
+  SERVER_PORT: "8080"
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://auth.bank.local/realms/bank"
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://auth.bank.local/realms/bank/protocol/openid-connect/certs"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+
+# notifications is a pure resource server — it doesn't call other services,
+# so it has no client-credentials registration of its own. The secret
+# block exists only so envFrom doesn't reference a missing Secret.
+secrets:
+  PLACEHOLDER: "unused"
+
+resources: {}
+
+global:
+  imagePullPolicy: IfNotPresent
+  hostAliases: []

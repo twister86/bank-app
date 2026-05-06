@@ -1,0 +1,6 @@
+apiVersion: v2
+name: postgres
+description: Library chart with StatefulSet + headless Service for a PostgreSQL instance dedicated to a single microservice.
+type: library
+version: 0.1.0
+appVersion: "16-alpine"

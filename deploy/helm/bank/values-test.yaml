@@ -1,0 +1,51 @@
+# Overrides for the `bank-test` namespace.
+
+global:
+  ingressHost: bank.test.local
+  authIngressHost: auth.bank.test.local
+
+accounts:
+  replicas: 1
+  config:
+    SPRING_PROFILES_ACTIVE: "k8s,test"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://auth.bank.test.local/realms/bank-test"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://auth.bank.test.local/realms/bank-test/protocol/openid-connect/certs"
+    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "http://auth.bank.test.local/realms/bank-test"
+
+cash:
+  replicas: 1
+  config:
+    SPRING_PROFILES_ACTIVE: "k8s,test"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://auth.bank.test.local/realms/bank-test"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://auth.bank.test.local/realms/bank-test/protocol/openid-connect/certs"
+    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "http://auth.bank.test.local/realms/bank-test"
+
+transfer:
+  replicas: 1
+  config:
+    SPRING_PROFILES_ACTIVE: "k8s,test"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://auth.bank.test.local/realms/bank-test"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://auth.bank.test.local/realms/bank-test/protocol/openid-connect/certs"
+    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "http://auth.bank.test.local/realms/bank-test"
+
+notifications:
+  replicas: 1
+  config:
+    SPRING_PROFILES_ACTIVE: "k8s,test"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://auth.bank.test.local/realms/bank-test"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://auth.bank.test.local/realms/bank-test/protocol/openid-connect/certs"
+
+front-ui:
+  replicas: 1
+  config:
+    SPRING_PROFILES_ACTIVE: "k8s,test"
+    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "http://auth.bank.test.local/realms/bank-test"
+    SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_REDIRECT_URI: "http://bank.test.local/login/oauth2/code/keycloak"
+    BANK_GATEWAY_URL: "http://bank.test.local"
+
+keycloak-realm:
+  realmsDir: realms-test
+
+keycloak:
+  ingress:
+    hostname: auth.bank.test.local

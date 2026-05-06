@@ -1,0 +1,45 @@
+# Umbrella-level test: verifies the front UI is reachable through the
+# Ingress hostname (proves both the Service routing and the ingress
+# rules are correct). For a deeper end-to-end check, additional tests
+# in each subchart probe the services directly via DNS.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-ingress-test"
+  labels:
+    app.kubernetes.io/name: bank-ingress-test
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: bank
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: probe
+      image: curlimages/curl:8.5.0
+      command:
+        - sh
+        - -ec
+        - |
+          # Resolve through the ingress controller — pass the public
+          # hostname via Host header so the ingress rule matches.
+          # The actual address of the controller is taken from values
+          # (umbrella.ingressTest), so this test is portable across
+          # ingress-nginx installs in different namespaces.
+          INGRESS_HOST="{{ .Values.global.ingressHost }}"
+          INGRESS_TARGET="{{ .Values.umbrella.ingressTest.targetService }}.{{ .Values.umbrella.ingressTest.targetNamespace }}.svc.cluster.local"
+          INGRESS_PORT="{{ .Values.umbrella.ingressTest.targetPort | default 80 }}"
+
+          for i in $(seq 1 30); do
+            # Front UI exposes /actuator/health (Spring Boot default). The
+            # umbrella Ingress catches `/` for front-ui, so this proves
+            # ingress → front-ui Service → Pod path is wired up.
+            if curl -fsS -H "Host: ${INGRESS_HOST}" "http://${INGRESS_TARGET}:${INGRESS_PORT}/actuator/health" >/dev/null; then
+              echo "==> ingress reaches front-ui health endpoint"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "ingress did not become ready in time"
+          exit 1

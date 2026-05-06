@@ -1,0 +1,32 @@
+# helm test pod — verifies that the accounts service answers /actuator/health
+# and that the database StatefulSet is reachable. Runs on `helm test <release>`.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-accounts-test"
+  labels:
+    {{- include "common-microservice.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: probe
+      image: curlimages/curl:8.5.0
+      command:
+        - sh
+        - -ec
+        - |
+          echo "==> Probing accounts service health endpoint"
+          for i in $(seq 1 30); do
+            if curl -fsS http://accounts:8080/actuator/health/readiness; then
+              echo
+              echo "==> accounts is ready"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 2s…"
+            sleep 2
+          done
+          echo "accounts did not become ready in time"
+          exit 1

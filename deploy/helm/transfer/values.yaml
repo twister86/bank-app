@@ -1,0 +1,43 @@
+replicas: 1
+port: 8080
+
+image:
+  repository: bank/transfer-service
+  tag: "1.1.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+config:
+  SPRING_PROFILES_ACTIVE: "k8s"
+  SERVER_PORT: "8080"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://transfer-db:5432/transfer"
+  SPRING_DATASOURCE_USERNAME: "transfer"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://auth.bank.local/realms/bank"
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://auth.bank.local/realms/bank/protocol/openid-connect/certs"
+  SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "http://auth.bank.local/realms/bank"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_AUTHORIZATION_GRANT_TYPE: "client_credentials"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_SCOPE: "accounts.write,notifications.write"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID: "transfer-service"
+  BANK_SERVICES_ACCOUNTS_URL: "http://accounts:8080"
+  BANK_SERVICES_NOTIFICATIONS_URL: "http://notifications:8080"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+
+secrets:
+  SPRING_DATASOURCE_PASSWORD: "transfer-pass"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET: "change-me"
+
+postgres:
+  database: transfer
+  username: transfer
+  storage: 1Gi
+
+resources: {}
+
+global:
+  imagePullPolicy: IfNotPresent
+  hostAliases: []

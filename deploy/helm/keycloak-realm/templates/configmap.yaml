@@ -1,0 +1,20 @@
+{{/*
+Glue ConfigMap that ships the realm JSON to Keycloak. The Bitnami
+chart mounts this ConfigMap at /opt/bitnami/keycloak/data/import and
+runs `kc.sh start --import-realm` on first boot.
+
+`Files.Glob` reads everything under the realmsDir folder of this chart
+at install time, so we can drop in additional realm files (e.g. one
+per environment) without changing the template.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configMapName }}
+  labels:
+    app.kubernetes.io/name: keycloak-realm
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: bank
+data:
+{{- $glob := printf "%s/*.json" .Values.realmsDir }}
+{{ (.Files.Glob $glob).AsConfig | indent 2 }}

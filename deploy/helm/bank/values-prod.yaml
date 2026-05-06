@@ -1,0 +1,81 @@
+# Overrides for the `bank-prod` namespace.
+#
+# In production the auth-server hostname uses HTTPS — Spring Boot
+# happily validates JWTs whose iss claim matches the configured
+# issuer-uri regardless of scheme; just be sure your ingress has TLS
+# configured (cert-manager, sealed-secrets etc).
+
+global:
+  ingressHost: bank.prod.local
+  authIngressHost: auth.bank.prod.local
+
+accounts:
+  replicas: 2
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits:   { cpu: 1,    memory: 1Gi   }
+  config:
+    SPRING_PROFILES_ACTIVE: "k8s,prod"
+    LOGGING_LEVEL_RU_YANDEX_PRACTICUM: "INFO"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "https://auth.bank.prod.local/realms/bank-prod"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "https://auth.bank.prod.local/realms/bank-prod/protocol/openid-connect/certs"
+    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "https://auth.bank.prod.local/realms/bank-prod"
+  postgres:
+    storage: 10Gi
+
+cash:
+  replicas: 2
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits:   { cpu: 1,    memory: 1Gi   }
+  config:
+    SPRING_PROFILES_ACTIVE: "k8s,prod"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "https://auth.bank.prod.local/realms/bank-prod"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "https://auth.bank.prod.local/realms/bank-prod/protocol/openid-connect/certs"
+    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "https://auth.bank.prod.local/realms/bank-prod"
+  postgres:
+    storage: 10Gi
+
+transfer:
+  replicas: 2
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits:   { cpu: 1,    memory: 1Gi   }
+  config:
+    SPRING_PROFILES_ACTIVE: "k8s,prod"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "https://auth.bank.prod.local/realms/bank-prod"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "https://auth.bank.prod.local/realms/bank-prod/protocol/openid-connect/certs"
+    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "https://auth.bank.prod.local/realms/bank-prod"
+  postgres:
+    storage: 10Gi
+
+notifications:
+  replicas: 2
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+  config:
+    SPRING_PROFILES_ACTIVE: "k8s,prod"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "https://auth.bank.prod.local/realms/bank-prod"
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "https://auth.bank.prod.local/realms/bank-prod/protocol/openid-connect/certs"
+
+front-ui:
+  replicas: 2
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+  config:
+    SPRING_PROFILES_ACTIVE: "k8s,prod"
+    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "https://auth.bank.prod.local/realms/bank-prod"
+    SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_REDIRECT_URI: "https://bank.prod.local/login/oauth2/code/keycloak"
+    BANK_GATEWAY_URL: "https://bank.prod.local"
+
+keycloak-realm:
+  realmsDir: realms-prod
+
+keycloak:
+  replicaCount: 2
+  proxy: edge
+  ingress:
+    hostname: auth.bank.prod.local
+    tls: true

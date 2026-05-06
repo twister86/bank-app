@@ -1,0 +1,58 @@
+# Default values for the accounts subchart.
+#
+# When installed via the umbrella chart, the umbrella's values.yaml can
+# override any of these under the `accounts:` key.
+
+replicas: 1
+port: 8080
+
+image:
+  repository: bank/accounts-service
+  tag: "1.1.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# Plain (non-secret) configuration → ConfigMap → envFrom on the pod.
+# Spring Boot maps SPRING_DATASOURCE_URL → spring.datasource.url etc.
+config:
+  SPRING_PROFILES_ACTIVE: "k8s"
+  SERVER_PORT: "8080"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://accounts-db:5432/accounts"
+  SPRING_DATASOURCE_USERNAME: "accounts"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
+  SPRING_LIQUIBASE_CHANGE_LOG: "classpath:db/changelog/db.changelog-master.yml"
+  # OAuth — same issuer-uri for browser and backend; CoreDNS rewrite or
+  # hostAliases makes auth.bank.local resolvable inside the cluster.
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://auth.bank.local/realms/bank"
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://auth.bank.local/realms/bank/protocol/openid-connect/certs"
+  SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "http://auth.bank.local/realms/bank"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_AUTHORIZATION_GRANT_TYPE: "client_credentials"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_SCOPE: "notifications.write"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID: "accounts-service"
+  # URLs of dependent services — DNS-resolved through Kubernetes Services.
+  BANK_SERVICES_NOTIFICATIONS_URL: "http://notifications:8080"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+
+secrets:
+  SPRING_DATASOURCE_PASSWORD: "accounts-pass"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET: "change-me"
+
+postgres:
+  database: accounts
+  username: accounts
+  storage: 1Gi
+  # storageClassName: standard   # uncomment to override the cluster default
+
+# Resource requests/limits — left unset by default. Set in
+# environment-specific values files (e.g. values-prod.yaml).
+resources: {}
+
+# global is filled in by the umbrella chart at render time; values here
+# are only used when this subchart is installed standalone.
+global:
+  imagePullPolicy: IfNotPresent
+  hostAliases: []

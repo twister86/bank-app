@@ -1,0 +1,106 @@
+# Umbrella values — the single source of truth for the whole bank
+# deployment. Each subchart's keys cascade down to that subchart.
+#
+# `global` is special: anything under it is automatically merged into
+# every subchart's `.Values.global`, so we put cross-cutting things
+# (ingress hostnames, image registry, hostAliases) here once.
+
+global:
+  imageRegistry: ""
+  imagePullPolicy: IfNotPresent
+
+  # Public hostnames behind the ingress controller. Override per
+  # environment in values-dev.yaml / values-prod.yaml.
+  ingressHost: bank.local
+  authIngressHost: auth.bank.local
+
+  # When pods inside the cluster talk to Keycloak by its public hostname,
+  # the cluster's CoreDNS doesn't know how to resolve `auth.bank.local`
+  # to the ingress controller. We pin it via hostAliases so JWT issuer-uri
+  # validation succeeds inside the cluster without changing CoreDNS config.
+  #
+  # The IP must be the ClusterIP of the ingress-nginx controller. Pull
+  # it at install time and pass through --set, e.g.:
+  #
+  #   INGRESS_IP=$(kubectl -n ingress-nginx get svc ingress-nginx-controller \
+  #     -o jsonpath='{.spec.clusterIP}')
+  #   helm install ... \
+  #     --set "global.hostAliases[0].ip=$INGRESS_IP" \
+  #     --set "global.hostAliases[0].hostnames[0]=auth.bank.local"
+  #
+  # The placeholder below keeps `helm template` working out of the box;
+  # production installs MUST override it.
+  hostAliases:
+    - ip: "127.0.0.1"   # placeholder — override at install time
+      hostnames:
+        - auth.bank.local
+
+# ---- Umbrella-level Ingress smoke test --------------------------------
+
+umbrella:
+  ingressTest:
+    # Where the ingress-nginx Service lives. Used by tests/test-ingress.yaml
+    # to do an in-cluster HTTP probe against the ingress without exiting
+    # the cluster. Override if ingress-nginx is installed elsewhere.
+    targetService: ingress-nginx-controller
+    targetNamespace: ingress-nginx
+    targetPort: 80
+
+# ---- Bank microservices ----------------------------------------------
+
+accounts:
+  enabled: true
+
+cash:
+  enabled: true
+
+transfer:
+  enabled: true
+
+notifications:
+  enabled: true
+
+front-ui:
+  enabled: true
+
+# ---- Keycloak (Bitnami) ----------------------------------------------
+
+# Set to false to deploy Keycloak yourself (e.g. outside the cluster).
+keycloak:
+  enabled: true
+
+  auth:
+    adminUser: admin
+    adminPassword: admin   # override via --set or sealed values for prod
+
+  # Single replica is enough for the practicum. Bitnami's chart can also
+  # do HA with PostgreSQL — flip replicaCount and proxy: edge if needed.
+  replicaCount: 1
+  proxy: edge
+
+  # Enable the embedded PostgreSQL chart so Keycloak gets its own DB
+  # (separate from the bank microservices' DBs).
+  postgresql:
+    enabled: true
+    auth:
+      username: keycloak
+      database: keycloak
+      password: keycloak
+
+  # Mount the realm JSON from keycloak-realm subchart's ConfigMap and
+  # tell Keycloak to import it on startup.
+  extraStartupArgs: "--import-realm"
+  extraVolumes:
+    - name: realm-config
+      configMap:
+        name: keycloak-realm-config
+  extraVolumeMounts:
+    - name: realm-config
+      mountPath: /opt/bitnami/keycloak/data/import
+      readOnly: true
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: auth.bank.local
+    tls: false

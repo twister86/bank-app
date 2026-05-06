@@ -1,0 +1,40 @@
+replicas: 1
+port: 8080
+
+image:
+  repository: bank/front
+  tag: "1.1.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# Front uses the standard Spring Boot health endpoint. There's no
+# dedicated readiness/liveness probe path beyond /actuator/health
+# (no JPA, no async warmup), so we keep the defaults.
+
+config:
+  SPRING_PROFILES_ACTIVE: "k8s"
+  SERVER_PORT: "8080"
+  # OAuth2 login (Authorization Code flow). The redirect URI is what
+  # the browser sees, so it has to be the public hostname behind ingress.
+  SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "http://auth.bank.local/realms/bank"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID: "bank-front"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_AUTHORIZATION_GRANT_TYPE: "authorization_code"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_REDIRECT_URI: "http://bank.local/login/oauth2/code/keycloak"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_SCOPE: "openid,profile,accounts.read,accounts.write,cash.write,transfer.write"
+  # The front talks to backend services through the same Ingress hostname
+  # the browser uses — keeps URLs consistent and avoids cookie/CORS gotchas.
+  BANK_GATEWAY_URL: "http://bank.local"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+
+secrets:
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET: "change-me"
+
+resources: {}
+
+global:
+  imagePullPolicy: IfNotPresent
+  hostAliases: []
