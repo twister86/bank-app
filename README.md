@@ -279,6 +279,31 @@ kubectl -n bank-dev delete pvc --all
   сервиса
 - `docker-compose.yml` остался для локальной разработки без K8s, но больше
   не запускает Eureka/Config Server
+- 
+## CI/CD
+
+Корневой `Jenkinsfile` описывает декларативный pipeline для автоматизации
+сборки и деплоя:
+
+| Стадия                      | Что делает                                                               |
+|-----------------------------|--------------------------------------------------------------------------|
+| Checkout                    | Клонирует исходники                                                      |
+| Build                       | `mvn -B -DskipTests clean package` собирает все модули                   |
+| Unit Tests                  | `mvn -B test`, публикует JUnit-репорты                                   |
+| Build Docker Images         | Собирает 5 образов с тегом `build-${BUILD_NUMBER}`                       |
+| Helm Lint                   | Проверяет синтаксис чарта                                                |
+| Deploy to Kubernetes (test) | На `main`-ветке: `helm upgrade --install` в `bank-test`                  |
+| Helm Smoke Tests            | `helm test bank` — дёргает `tests/test-health.yaml` (актуатор + ingress) |
+
+### Запуск
+
+В Jenkins завести Pipeline-job, указать репозиторий и `Script Path: Jenkinsfile`.
+В Credentials store добавить kubeconfig тестового кластера под ID `kubeconfig-bank`
+(используется в стадии Deploy через `withCredentials`).
+
+Параметры job'а:
+- `IMAGE_TAG` — тег docker-образа (по умолчанию `build-${BUILD_NUMBER}`)
+- `NAMESPACE` — целевой namespace в K8s (по умолчанию `bank-test`)
 
 ## Локальная разработка без Kubernetes
 
