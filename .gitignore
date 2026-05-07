@@ -58,3 +58,4 @@ logs/
 /deploy/helm/cash/charts/postgres-0.1.0.tgz
 /deploy/helm/transfer/charts/postgres-0.1.0.tgz
 /deploy/helm/bank/charts/transfer-0.1.0.tgz
+/jenkins-cli.jar
