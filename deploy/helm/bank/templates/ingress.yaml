@@ -1,13 +1,4 @@
-{{/*
-Single Ingress that fronts the front UI and routes /api/* to the
-appropriate backend service. nginx-ingress passes through the
-Authorization header by default — there's no equivalent of Spring
-Cloud Gateway's TokenRelay filter to configure.
-
-The auth.bank.local Ingress is provided by the Bitnami keycloak
-subchart (see values.yaml under keycloak.ingress).
-*/}}
-apiVersion: networking.k8s.io/v1
+﻿apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Release.Name }}-bank-ingress
@@ -18,7 +9,7 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
-    # Larger body for, e.g., bulk requests; default 1m is fine but explicit is nice.
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
 spec:
   ingressClassName: nginx
@@ -26,36 +17,34 @@ spec:
     - host: {{ .Values.global.ingressHost }}
       http:
         paths:
-          - path: /api/accounts
-            pathType: Prefix
+          - path: /api/(accounts.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: accounts
                 port:
                   number: 8080
-          - path: /api/cash
-            pathType: Prefix
+          - path: /api/(cash.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: cash
                 port:
                   number: 8080
-          - path: /api/transfer
-            pathType: Prefix
+          - path: /api/(transfer.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: transfer
                 port:
                   number: 8080
-          - path: /api/notifications
-            pathType: Prefix
+          - path: /api/(notifications.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: notifications
                 port:
                   number: 8080
-          # Catch-all for the front UI — Thymeleaf pages, /login,
-          # /login/oauth2/code/keycloak (the redirect URI), static assets.
           - path: /
             pathType: Prefix
             backend:
