@@ -1,0 +1,7 @@
+# Path inside this chart where realm files live. The configmap.yaml
+# template loads every file under this directory and exposes it as a
+# key in the ConfigMap. Per-environment overrides (values-dev.yaml etc)
+# can point at realms-dev/, realms-test/, realms-prod/.
+realmsDir: realms
+
+configMapName: keycloak-realm-config

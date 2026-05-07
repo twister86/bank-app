@@ -1,0 +1,53 @@
+replicas: 1
+port: 8080
+
+image:
+  repository: bank/transfer-service
+  tag: "1.1.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+config:
+  SPRING_PROFILES_ACTIVE: "k8s"
+  SERVER_PORT: "8080"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://transfer-db:5432/transfer"
+  SPRING_DATASOURCE_USERNAME: "transfer"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
+  # RESOURCE SERVER (JWT) — приводи к auth (НЕ localhost)
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://auth.bank.local/realms/bank"
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://auth.bank.local/realms/bank/protocol/openid-connect/certs"
+
+  # SHARED PROVIDER
+  SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_PROVIDER_ISSUER_URI: "http://auth.bank.local/realms/bank"
+
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_TRANSFER_CLIENT_CLIENT_ID: "transfer-client"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_TRANSFER_CLIENT_AUTHORIZATION_GRANT_TYPE: "client_credentials"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_TRANSFER_CLIENT_SCOPE: "accounts.write,notifications.write"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_TRANSFER_CLIENT_PROVIDER: "keycloak-provider"
+  SERVICES_ACCOUNTS_URL: "http://accounts:8080"
+  SERVICES_NOTIFICATIONS_URL: "http://notifications:8080"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+
+secrets:
+  SPRING_DATASOURCE_PASSWORD: "transfer-pass"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_TRANSFER_CLIENT_CLIENT_SECRET: "transfer-secret"
+
+
+postgres:
+  database: transfer
+  username: transfer
+  storage: 1Gi
+  initSql: |
+    CREATE SCHEMA IF NOT EXISTS transfer AUTHORIZATION transfer;
+    GRANT ALL ON SCHEMA transfer TO transfer;
+
+resources: {}
+
+global:
+  imagePullPolicy: IfNotPresent
+  hostAliases: []
+waitForOidc: "http://auth.bank.dev.local/realms/bank-dev/.well-known/openid-configuration"

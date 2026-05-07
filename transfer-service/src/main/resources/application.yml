@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: transfer-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://localhost:8081/realms/bank}
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://localhost:8081/realms/bank/protocol/openid-connect/certs}
+      client:
+        registration:
+          transfer-client:
+            provider: keycloak-provider
+            client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_TRANSFER_CLIENT_CLIENT_ID:transfer-client}
+            client-secret: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_TRANSFER_CLIENT_CLIENT_SECRET:transfer-secret}
+            authorization-grant-type: client_credentials
+            scope: accounts.write,notifications.write
+        provider:
+          keycloak-provider:
+            issuer-uri: ${SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_PROVIDER_ISSUER_URI:http://localhost:8081/realms/bank}
+
+server:
+  port: ${SERVER_PORT:8083}
+
+bank:
+  services:
+    accounts:
+      url: ${SERVICES_ACCOUNTS_URL:http://localhost:8080}
+    notifications:
+      url: ${SERVICES_NOTIFICATIONS_URL:http://localhost:8084}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+logging:
+  level:
+    ru.yandex.practicum.transfer: ${LOGGING_LEVEL_APP:INFO}

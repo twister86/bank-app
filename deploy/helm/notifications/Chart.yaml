@@ -1,0 +1,11 @@
+apiVersion: v2
+name: notifications
+description: Notifications microservice — emits notifications about account operations (logs them by default).
+type: application
+version: 0.1.0
+appVersion: "1.1.0"
+
+dependencies:
+  - name: common-microservice
+    version: 0.1.0
+    repository: "file://../common-microservice"

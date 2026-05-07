@@ -1,0 +1,56 @@
+﻿apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-bank-ingress
+  labels:
+    app.kubernetes.io/name: bank-ingress
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: bank
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.global.ingressHost }}
+      http:
+        paths:
+          - path: /api/(accounts.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: accounts
+                port:
+                  number: 8080
+          - path: /api/(cash.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: cash
+                port:
+                  number: 8080
+          - path: /api/(transfer.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: transfer
+                port:
+                  number: 8080
+          - path: /api/(notifications.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: notifications
+                port:
+                  number: 8080
+          - path: /(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: front-ui
+                port:
+                  number: 8080

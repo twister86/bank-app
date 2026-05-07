@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: front
+
+  thymeleaf:
+    cache: ${SPRING_THYMELEAF_CACHE:true}
+
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID:front-client}
+            client-secret: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET:front-secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - openid
+              - profile
+              - email
+              - accounts.read
+              - accounts.write
+              - cash.write
+              - transfer.write
+        provider:
+          keycloak:
+            issuer-uri: ${SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/bank}
+            user-name-attribute: preferred_username
+
+server:
+  port: ${SERVER_PORT:8080}
+
+services:
+  gateway:
+    url: ${SERVICES_GATEWAY_URL:http://localhost:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info}
+  endpoint:
+    health:
+      probes:
+        enabled: ${MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED:true}
+      show-details: when-authorized
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+logging:
+  level:
+    ru.yandex.practicum.mybankfront: ${LOGGING_LEVEL_APP:INFO}

@@ -1,0 +1,11 @@
+apiVersion: v2
+name: front-ui
+description: Front UI — Thymeleaf web app, OAuth2 login client, calls bank microservices via the umbrella Ingress.
+type: application
+version: 0.1.0
+appVersion: "1.1.0"
+
+dependencies:
+  - name: common-microservice
+    version: 0.1.0
+    repository: "file://../common-microservice"

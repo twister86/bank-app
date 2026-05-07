@@ -1,0 +1,90 @@
+spring:
+  application:
+    name: cash-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://localhost:8081/realms/bank}
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://localhost:8081/realms/bank/protocol/openid-connect/certs}
+      client:
+        registration:
+          cash-client:
+            provider: keycloak-provider
+            client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_CASH_CLIENT_CLIENT_ID:cash-client}
+            client-secret: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_CASH_CLIENT_CLIENT_SECRET:cash-secret}
+            authorization-grant-type: client_credentials
+            scope: accounts.write,notifications.write
+        provider:
+          keycloak-provider:
+            issuer-uri: ${SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_PROVIDER_ISSUER_URI:http://localhost:8081/realms/bank}
+
+server:
+  port: ${SERVER_PORT:8082}
+
+bank:
+  services:
+    accounts:
+      url: ${SERVICES_ACCOUNTS_URL:http://localhost:8080}
+    notifications:
+      url: ${SERVICES_NOTIFICATIONS_URL:http://localhost:8084}
+
+# Resilience4j: поведение Retry и CircuitBreaker для inter-service вызовов.
+# Имена инстансов (accountsService, notificationsService) должны совпадать
+# с параметром name в аннотациях @Retry и @CircuitBreaker на клиентах.
+resilience4j:
+  retry:
+    instances:
+      accountsService:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        # НЕ делаем retry на бизнес-ошибках (409 Insufficient Funds, 400
+        # Validation). Retry имеет смысл только на сетевых/5xx ошибках.
+        # Без этого при "недостаточно средств" пользователь ждал бы 3 круга
+        # и получал тот же ответ через ~3 секунды.
+        ignore-exceptions:
+          - ru.yandex.practicum.cash.exception.AccountsOperationFailedException
+      notificationsService:
+        max-attempts: 3
+        wait-duration: 300ms
+        exponential-backoff-multiplier: 2
+  circuitbreaker:
+    instances:
+      accountsService:
+        sliding-window-type: count_based
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        # Бизнес-ошибки не считаем "падением" сервиса — accounts-service
+        # жив и отвечает осмысленно, просто денег не хватает.
+        ignore-exceptions:
+          - ru.yandex.practicum.cash.exception.AccountsOperationFailedException
+      notificationsService:
+        sliding-window-type: count_based
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+
+# Экспонируем актуаторные эндпоинты resilience4j — видно состояние circuit breaker
+# и статистику retry через GET /actuator/circuitbreakers и /actuator/retries.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+
+logging:
+  level:
+    ru.yandex.practicum.cash: ${LOGGING_LEVEL_APP:INFO}

@@ -1,0 +1,14 @@
+apiVersion: v2
+name: transfer
+description: Transfer microservice — moves money between two accounts.
+type: application
+version: 0.1.0
+appVersion: "1.1.0"
+
+dependencies:
+  - name: common-microservice
+    version: 0.1.0
+    repository: "file://../common-microservice"
+  - name: postgres
+    version: 0.1.0
+    repository: "file://../postgres"
