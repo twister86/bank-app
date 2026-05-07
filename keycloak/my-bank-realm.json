@@ -171,29 +171,6 @@
       ]
     },
     {
-      "clientId": "gateway-client",
-      "name": "Gateway (Authorization Code)",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": false,
-      "secret": "gateway-secret",
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false,
-      "redirectUris": [
-        "http://localhost:8080/*",
-        "http://gateway:8080/*"
-      ],
-      "webOrigins": ["+"],
-      "defaultClientScopes": ["openid", "profile", "email"],
-      "optionalClientScopes": [
-        "accounts.read",
-        "accounts.write",
-        "cash.write",
-        "transfer.write"
-      ]
-    },
-    {
       "clientId": "accounts-client",
       "name": "Accounts service (Client Credentials)",
       "enabled": true,

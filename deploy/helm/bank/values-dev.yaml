@@ -24,7 +24,7 @@ cash:
     LOGGING_LEVEL_RU_YANDEX_PRACTICUM: "DEBUG"
     SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://auth.bank.dev.local/realms/bank-dev"
     SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://auth.bank.dev.local/realms/bank-dev/protocol/openid-connect/certs"
-    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "http://auth.bank.dev.local/realms/bank-dev"
+    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_PROVIDER_ISSUER_URI: "http://auth.bank.dev.local/realms/bank-dev"
 
 transfer:
   replicas: 1
@@ -33,7 +33,7 @@ transfer:
     LOGGING_LEVEL_RU_YANDEX_PRACTICUM: "DEBUG"
     SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://auth.bank.dev.local/realms/bank-dev"
     SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://auth.bank.dev.local/realms/bank-dev/protocol/openid-connect/certs"
-    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: "http://auth.bank.dev.local/realms/bank-dev"
+    SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_PROVIDER_ISSUER_URI: "http://auth.bank.dev.local/realms/bank-dev"
 
 notifications:
   replicas: 1

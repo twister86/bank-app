@@ -47,8 +47,8 @@ spec:
                 name: notifications
                 port:
                   number: 8080
-          - path: /
-            pathType: Prefix
+          - path: /(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: front-ui

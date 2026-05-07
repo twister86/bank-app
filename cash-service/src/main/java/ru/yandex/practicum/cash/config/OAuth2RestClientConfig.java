@@ -23,17 +23,9 @@ import java.util.List;
 @Configuration
 public class OAuth2RestClientConfig {
 
-    @Bean
-    public RestClient accountsRestClient(OAuth2AuthorizedClientManager authorizedClientManager) {
-        return build(authorizedClientManager);
-    }
 
     @Bean
-    public RestClient notificationsRestClient(OAuth2AuthorizedClientManager authorizedClientManager) {
-        return build(authorizedClientManager);
-    }
-
-    private RestClient build(OAuth2AuthorizedClientManager mgr) {
+    public RestClient cashRestClient(OAuth2AuthorizedClientManager mgr) {
         OAuth2ClientHttpRequestInterceptor oauth2 =
                 new OAuth2ClientHttpRequestInterceptor(mgr);
         oauth2.setClientRegistrationIdResolver(req -> "cash-client");
